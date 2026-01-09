@@ -105,7 +105,7 @@ router.get('/google',
 );
 
 router.get('/google/callback',
-  passport.authenticate('google', { failureRedirect: 'http://localhost:3000/login' }),
+  passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/login` }),
   async (req, res) => {
     try {
       // Generate JWT token for the authenticated user
@@ -116,10 +116,10 @@ router.get('/google/callback',
       );
 
       // Redirect to frontend with token
-      res.redirect(`http://localhost:3000/login?token=${token}&role=${req.user.role}`);
+      res.redirect(`${process.env.FRONTEND_URL}/login?token=${token}&role=${req.user.role}`);
     } catch (error) {
       console.error('Google OAuth callback error:', error);
-      res.redirect('http://localhost:3000/login?error=oauth_failed');
+      res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_failed`);
     }
   }
 );

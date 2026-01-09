@@ -14,16 +14,13 @@ import mongoose from 'mongoose'
 import session from 'express-session';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import path from 'path';
 import User from './models/User.js';
 
 // Configure Google OAuth Strategy
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: 'http://localhost:5000/api/auth/google/callback'
+  callbackURL: `${process.env.BASE_URL}/api/auth/google/callback`
 },
 async (accessToken, refreshToken, profile, done) => {
   try {
@@ -71,14 +68,17 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'your-session-secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } // Set to true if using HTTPS
+  cookie: { secure: process.env.NODE_ENV === 'production' }
 }));
 
 // Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(morgan('dev'));
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json());
 
 // define the port to run the server on
@@ -103,37 +103,10 @@ app.get('/', (req, res) => {
      res.json({ message: "Get Request" });
 });
 
-// Create HTTP server and integrate Socket.IO
-const server = createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
-});
-
-// Socket.IO connection handling
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
-  // Join user-specific room for notifications
-  socket.on('join', (userId) => {
-    socket.join(userId);
-    console.log(`User ${userId} joined room`);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-});
-
-// Make io accessible in routes
-app.set('io', io);
-
 // Database connection function
 mongoose.connect(process.env.MONGO_URI)
 .then(() => {
-     server.listen(port, () =>{
+     app.listen(port, () =>{
      console.log(`server is running on port ${port} & connected to database`);
      });
 

@@ -38,16 +38,8 @@ router.post('/', auth, async (req, res) => {
 
     await application.save();
 
-    // Emit real-time notification to the employer
-    const io = req.app.get('io');
-    if (io) {
-      io.to(job.employerId.toString()).emit('newApplication', {
-        applicationId: application._id,
-        jobTitle: job.title,
-        applicantName: req.user.name || req.user.email,
-        appliedAt: new Date()
-      });
-    }
+    // Notification will be handled via database polling or other means
+    // Real-time notifications removed for Vercel compatibility
 
     res.status(201).json({ message: 'Application submitted successfully', application });
   } catch (error) {
@@ -139,18 +131,8 @@ router.put('/:id', auth, async (req, res) => {
     });
     await notification.save();
 
-    // Emit real-time notification to the applicant
-    const io = req.app.get('io');
-    if (io) {
-      io.to(application.userId._id.toString()).emit('applicationStatusUpdate', {
-        applicationId: application._id,
-        jobTitle: application.jobId.title,
-        status: status,
-        oldStatus: oldStatus,
-        employerName: req.user.name || req.user.email,
-        updatedAt: new Date()
-      });
-    }
+    // Real-time notification removed for Vercel compatibility
+    // Notifications will be polled from the database
 
     res.json(application);
   } catch (error) {
