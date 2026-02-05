@@ -131,8 +131,15 @@ router.put('/:id', auth, async (req, res) => {
     });
     await notification.save();
 
-    // Real-time notification removed for Vercel compatibility
-    // Notifications will be polled from the database
+    // Emit real-time notification to the job seeker
+    const io = req.app.get('io');
+    io.to(application.userId._id.toString()).emit('applicationStatusUpdate', {
+      message: `Your application for "${application.jobId.title}" has been ${status}`,
+      status: status,
+      jobTitle: application.jobId.title,
+      employerName: req.user.name || req.user.email,
+      updatedAt: new Date()
+    });
 
     res.json(application);
   } catch (error) {

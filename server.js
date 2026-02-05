@@ -15,6 +15,8 @@ import session from 'express-session';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import User from './models/User.js';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 
 // Configure Google OAuth Strategy
 passport.use(new GoogleStrategy({
@@ -103,10 +105,38 @@ app.get('/', (req, res) => {
      res.json({ message: "Get Request" });
 });
 
+// Create HTTP server
+const server = createServer(app);
+
+// Initialize Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true
+  }
+});
+
+// Make io available to routes
+app.set('io', io);
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  socket.on('join', (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined room`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
 // Database connection function
 mongoose.connect(process.env.MONGO_URI)
 .then(() => {
-     app.listen(port, () =>{
+     server.listen(port, () =>{
      console.log(`server is running on port ${port} & connected to database`);
      });
 
